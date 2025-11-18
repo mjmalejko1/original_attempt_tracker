@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rio Links Golf Course</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Rio Links">
+  <meta name="theme-color" content="#013220">
+
+  <!-- PWA icons & manifest -->
+  <link rel="apple-touch-icon" href="apple-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-size: 16px;
+    }
+    body {
+      margin: 0;
+      background: #f5f5f7;
+    }
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    header {
+      padding: 10px 16px 6px 16px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    /* Medium logo everywhere */
+    #appLogo {
+      width: 130px;
+      display: block;
+      margin: 0 auto 6px auto;
+    }
+    header .subtitle {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 2px;
+    }
+    main {
+      padding: 14px;
+      flex: 1;
+      position: relative;
+    }
+    footer {
+      padding: 8px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #888;
+      border-top: 1px solid #eee;
+    }
+
+    .hidden { display: none; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 500;
+      margin: 6px 0;
+      background: #007aff;
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #e5e5ea;
+      color: #111;
+    }
+    .btn-small {
+      display: inline-block;
+      width: auto;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      border: none;
+      margin: 4px 4px 0 0;
+      background: #e5e5ea;
+      color: #111;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    li {
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 6px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      background: #f2f2f7;
+      margin-left: 6px;
+    }
+
+    .player-row {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f8f8fa;
+    }
+
+    .score-buttons button {
+      margin: 5px;
+      padding: 16px 20px;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      border: none;
+      background: #e5e5ea;
+    }
+    .score-buttons button.selected {
+      background: #34c759;
+      color: #fff;
+      transform: scale(1.15);
+    }
+
+    #roundHoleLabel {
+      font-weight: 700;
+      color: #007aff;
+      font-size: 1.2rem;
+      text-shadow: 0 0 6px rgba(0,122,255,0.2);
+      margin-bottom: 4px;
+    }
+
+    .hole-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .banner {
+      background: #f2f2f7;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+
+    .fade-in {
+      animation: fade 0.25s ease-out;
+    }
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-card {
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 0.9rem;
+    }
+    .history-card strong {
+      font-size: 0.85rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th, td {
+      padding: 4px;
+      text-align: right;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Scorecard (landscape) styles */
+    #screen-scorecard table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+    }
+    #screen-scorecard th,
+    #screen-scorecard td {
+      border: 1px solid #ddd;
+      padding: 3px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    #screen-scorecard th:first-child,
+    #screen-scorecard td:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      background: #fff;
+    }
+
+    .scorecell {
+      cursor: pointer;
+    }
+    .scorecell.ace {
+      background: #ffe58a;
+      font-weight: 700;
+    }
+    .scorecell.birdie {
+      background: #d4f8d4;
+    }
+    .scorecell.bogey {
+      background: #ffd6d6;
+    }
+
+    /* Summary watermark */
+    #summaryStamp {
+      width: 200px;
+      opacity: 0.1;
+      position: fixed;
+      top: 180px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    #summaryContent {
+      margin-top: 40px;
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <img id="appLogo" src="Copy of Rio Links GC-02.jpg" alt="Rio Links Logo">
+    <div class="subtitle">Barred Owl · Great Horned Owl</div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="screen-home">
+      <div class="section-title">Home</div>
+      <button class="btn" id="btnHomeStart">Start Round</button>
+      <button class="btn btn-secondary" id="btnHomePlayers">Players</button>
+      <button class="btn btn-secondary" id="btnHomeHistory">History</button>
+      <button class="btn btn-secondary" id="btnHomeAnalytics">Player Analytics</button>
+      <button class="btn btn-secondary" id="btnHomeLeaderboard">Leaderboards</button>
+      <button class="btn btn-secondary" id="btnHomeCourseAnalytics">Course Analytics</button>
+      <button class="btn btn-secondary" id="btnHomeExport">Export Scores (CSV)</button>
+      <button class="btn btn-secondary" id="btnExportJSON">Export Backup (JSON)</button>
+      <button class="btn btn-secondary" id="btnImportBackup">Import Backup</button>
+      <input id="backupFileInput" type="file" accept=".json" style="display:none;">
+    </section>
+
+    <!-- PLAYERS -->
+    <section id="screen-players" class="hidden">
+      <div class="section-title">Players</div>
+      <input id="playerNameInput" type="text" placeholder="Add player (Luke, Mike, Gina...)">
+      <button class="btn" id="btnAddPlayer">Add Player</button>
+      <ul id="playersList"></ul>
+      <button class="btn-small btn-secondary" id="btnBackFromPlayers">&lt; Home</button>
+    </section>
+
+    <!-- SELECT PLAYERS -->
+    <section id="screen-select-players" class="hidden">
+      <div class="section-title">Select Players</div>
+      <ul id="playerSelectList"></ul>
+      <button class="btn" id="btnStartRoundFromSelection">Begin Round</button>
+      <button class="btn-small btn-secondary" id="btnBackFromSelect">&lt; Home</button>
+    </section>
+
+    <!-- ROUND (portrait scoring) -->
+    <section id="screen-round" class="hidden">
+      <div id="roundHoleLabel"></div>
+      <div class="hole-label" id="holeTitle"></div>
+      <div class="banner" id="roundScoreBanner"></div>
+      <div id="scoreButtonsContainer"></div>
+
+      <div style="margin-top:10px;">
+        <button class="btn-small btn-secondary" id="btnPrevHole">&lt; Prev</button>
+        <button class="btn-small btn-secondary" id="btnNextHole">Next &gt;</button>
+      </div>
+
+      <button class="btn" id="btnFinishRoundBottom" disabled style="margin-top:20px;opacity:0.4;">
+        Save Round
+      </button>
+      <button class="btn-small btn-secondary" id="btnBackFromRound">&lt; Cancel Round</button>
+    </section>
+
+    <!-- SCORECARD (landscape view) -->
+    <section id="screen-scorecard" class="hidden">
+      <div class="section-title">Scorecard</div>
+      <div id="scorecardTableContainer"></div>
+      <p style="font-size:0.8rem;color:#666;margin-top:6px;">
+        Rotate back to portrait to return to hole-by-hole view.
+      </p>
+    </section>
+
+    <!-- SUMMARY -->
+    <section id="screen-summary" class="hidden">
+      <div class="section-title">Round Summary</div>
+      <img id="summaryStamp" src="Copy of Rio Links GC-02.jpg" alt="Course Logo">
+      <div id="summaryContent"></div>
+      <button class="btn" id="btnSummaryDone">Back to Home</button>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="screen-history" class="hidden">
+      <div class="section-title">Recent Rounds</div>
+      <div id="historyContent"></div>
+      <button class="btn-small btn-secondary" id="btnBackFromHistory">&lt; Home</button>
+    </section>
+
+    <!-- PLAYER ANALYTICS -->
+    <section id="screen-analytics" class="hidden">
+      <div class="section-title">Player Analytics</div>
+      <ul id="analyticsPlayerList"></ul>
+      <div id="analyticsResults" style="margin-top:10px;"></div>
+      <canvas id="handicapChart" width="400" height="220" style="margin-top:20px;"></canvas>
+      <button class="btn-small btn-secondary" id="btnBackFromAnalytics">&lt; Home</button>
+    </section>
+
+    <!-- LEADERBOARDS -->
+    <section id="screen-leaderboards" class="hidden">
+      <div class="section-title">All-Time Leaderboards</div>
+      <div id="leaderboardOverall" style="margin-top:10px;"></div>
+      <div id="leaderboardBarred" style="margin-top:18px;"></div>
+      <div id="leaderboardHorned" style="margin-top:18px;"></div>
+      <button class="btn-small btn-secondary" id="btnBackFromLeaderboards">&lt; Home</button>
+    </section>
+
+    <!-- COURSE ANALYTICS -->
+    <section id="screen-course-analytics" class="hidden">
+      <div class="section-title">Course Analytics</div>
+      <div id="courseAnalyticsContainer"></div>
+      <canvas id="courseAnalyticsChart" height="260" style="margin-top:15px;"></canvas>
+      <button class="btn-small btn-secondary" id="btnBackFromCourseAnalytics">&lt; Home</button>
+    </section>
+  </main>
+
+  <footer>
+    Rio Links • Family Putting History
+  </footer>
+</div>
+
+<!-- Single JS bundle with all logic -->
+<script type="module" src="app.js"></script>
+</body>
+</html>
