@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Backyard Putting">
   <meta name="theme-color" content="#013220">
 
-  <!-- Optional PWA bits (safe even if files missing) -->
+  <!-- Icons / manifest (optional but nice) -->
   <link rel="apple-touch-icon" href="apple-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -17,6 +17,10 @@
 
   <!-- Chart.js for analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Firebase compat (Spark-friendly and GH Pages–safe) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
   <style>
     :root {
@@ -373,7 +377,7 @@
   </footer>
 </div>
 
-<script type="module">
+<script>
 /* =========================
    CORE CONSTANTS & HELPERS
    ========================= */
@@ -407,11 +411,8 @@ let editModeRoundId = null;
 let handicapChartInstance = null;
 let courseAnalyticsChart = null;
 
-/* Firebase globals */
+/* Firebase globals (compat) */
 let db = null;
-let docFn = null;
-let getDocFn = null;
-let setDocFn = null;
 
 /* =========================
    LOCAL STORAGE
@@ -434,7 +435,7 @@ function saveLocal() {
 }
 
 /* =========================
-   FIREBASE (DYNAMIC IMPORT)
+   FIREBASE (COMPAT) SETUP
    ========================= */
 const firebaseConfig = {
   apiKey: "AIzaSyCX9C7uy5JNklprp3tZeKV3tPGr410ix28",
@@ -446,33 +447,29 @@ const firebaseConfig = {
   measurementId: "G-6MVV3ZFT3T"
 };
 
-(async () => {
+function initFirebase() {
   try {
-    const appModule = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js");
-    const firestoreModule = await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js");
-    const app = appModule.initializeApp(firebaseConfig);
-    db = firestoreModule.getFirestore(app);
-    docFn = firestoreModule.doc;
-    getDocFn = firestoreModule.getDoc;
-    setDocFn = firestoreModule.setDoc;
-
-    await loadFromFirebase();
-  } catch (err) {
-    console.warn("Firebase load failed (offline or blocked). Local-only mode:", err);
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    loadFromFirebase();
+  } catch (e) {
+    console.warn("Firebase init failed; app will run local-only:", e);
   }
-})();
+}
 
 function getFamilyDocRef() {
-  if (!db || !docFn) return null;
-  return docFn(db, "backyardPutting", "family-1");
+  if (!db) return null;
+  return db.collection("backyardPutting").doc("family-1");
 }
 
 async function loadFromFirebase() {
   try {
     const ref = getFamilyDocRef();
-    if (!ref || !getDocFn) return;
-    const snap = await getDocFn(ref);
-    if (snap.exists()) {
+    if (!ref) return;
+    const snap = await ref.get();
+    if (snap.exists) {
       const data = snap.data();
       if (data.players && data.rounds) {
         appData = data;
@@ -480,7 +477,7 @@ async function loadFromFirebase() {
         renderPlayers();
       }
     } else {
-      if (setDocFn) await setDocFn(ref, appData);
+      await ref.set(appData);
     }
   } catch (e) {
     console.warn("Firebase load error:", e);
@@ -490,7 +487,7 @@ async function loadFromFirebase() {
 async function saveToFirebase() {
   try {
     const ref = getFamilyDocRef();
-    if (!ref || !setDocFn) return;
+    if (!ref) return;
 
     const incompleteExists = appData.rounds.some(r =>
       Object.values(r.scores || {}).some(arr => arr.includes(null))
@@ -499,7 +496,7 @@ async function saveToFirebase() {
       console.warn("Skipped Firebase sync: incomplete round present.");
       return;
     }
-    await setDocFn(ref, appData);
+    await ref.set(appData);
   } catch (e) {
     console.warn("Firebase save error:", e);
   }
@@ -1302,6 +1299,7 @@ loadLocal();
 renderPlayers();
 showScreen("screen-home");
 initButtons();
+initFirebase(); // connect to Firebase Spark if available
 </script>
 </body>
 </html>
